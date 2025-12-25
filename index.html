@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>REFLECTIONS</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <video id="webcamVideo" class="input_video" playsinline style="display:none;"></video>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div id="start-screen" class="screen active">
+            <div class="scanlines"></div>
+            
+            <div class="terminal-box">
+                <div class="terminal-header">
+                    <span class="blink">>></span> SYSTEM_BOOT_SEQUENCE // V.0.9
+                </div>
+
+                <h1 class="glitch" data-text="REFLECTIONS">REFLECTIONS</h1>
+                
+                <div id="loading-phase">
+                    <div class="canvas-wrapper">
+                        <canvas id="miniGameCanvas" width="500" height="150"></canvas>
+                        <div class="overlay-text">ESTABLISHING_NEURAL_LINK...</div>
+                    </div>
+                    
+                    <div id="loading-container">
+                        <div class="loading-label">INSTALLING AI MODULES:</div>
+                        <div id="progress-bar-bg"><div id="progress-bar-fill"></div></div>
+                        <div id="system-log">Initializing...</div>
+                    </div>
+                </div>
+
+                <div id="calibration-phase" style="display:none;">
+                    <div class="monitor-frame">
+                        <div class="hud-corner top-left"></div>
+                        <div class="hud-corner top-right"></div>
+                        <div class="hud-corner bottom-left"></div>
+                        <div class="hud-corner bottom-right"></div>
+                        <div class="rec-indicator">● REC</div>
+                        
+                        <canvas id="calibrationCanvas" width="480" height="360"></canvas>
+                    </div>
+                    <p class="instruction-text">
+                        <span class="warn">⚠ SUBJECT REQUIRED</span><br>
+                        ENSURE LIGHTING IS SUFFICIENT.<br>
+                        SHOW <span class="highlight">HANDS</span> AND <span class="highlight">FACE</span> TO CALIBRATE.
+                    </p>
+                </div>
+
+                <button id="btn-start" type="button" disabled autocomplete="off">
+                    <span class="btn-text">[ LOADING RESOURCES ]</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="end-screen" class="screen">
+            <div class="terminal-box" style="width: 800px; max-height: 90vh; overflow-y: auto;">
+                <h1 style="color:#00ff88; font-size: 2rem;">SURVIVAL_REPORT_LOG</h1>
+                <p>SUBJECT STATUS: ESCAPED.</p>
+                <p>OBSERVATION RECORD:</p>
+                <div id="reaction-reel" style="display:flex; flex-wrap:wrap; gap:15px; justify-content:center; margin: 20px 0;"></div>
+                <div style="margin-top:20px; border-top:1px dashed #333; padding-top:20px;">
+                    <p style="font-size:0.8rem; color:#666;">* DATA PURGE IMMINENT ON SESSION CLOSE.</p>
+                    <button onclick="location.reload()" style="border-color:#fff; color:#fff;">REBOOT_SIMULATION</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="hud">
+            <div id="center-reticle"></div>
+            <div id="interaction-prompt"></div>
+            <div id="battery-container">
+                <div id="battery-icon">⚡</div>
+                <div id="battery-bar-wrap"><div id="battery-fill"></div></div>
+            </div>
+            <div id="camera-status">● LIVE</div>
+            <div id="ai-icons" style="position:absolute; bottom:20px; right:20px; display:none;">
+                <div id="hand-icon">✋</div>
+                <div id="face-icon">☺</div>
+            </div>
+            </div>
+    </div>
+
+    <script>
+        (function() {
+            const cvs = document.getElementById('miniGameCanvas');
+            const ctx = cvs.getContext('2d');
+            let active = true;
+            const nodes = [];
+            const NODE_COUNT = 40;
+            const CONNECTION_DIST = 80;
+
+            for(let i=0; i<NODE_COUNT; i++) {
+                nodes.push({
+                    x: Math.random() * cvs.width, y: Math.random() * cvs.height,
+                    vx: (Math.random() - 0.5) * 0.8, vy: (Math.random() - 0.5) * 0.8
+                });
+            }
+
+            function draw() {
+                if(!active) return;
+                requestAnimationFrame(draw);
+                ctx.fillStyle = 'rgba(5, 16, 5, 0.2)'; ctx.fillRect(0, 0, cvs.width, cvs.height);
+                ctx.strokeStyle = '#002211'; ctx.lineWidth = 1; ctx.beginPath();
+                for(let x=0; x<cvs.width; x+=40) { ctx.moveTo(x,0); ctx.lineTo(x,cvs.height); } ctx.stroke();
+                
+                nodes.forEach(node => {
+                    node.x += node.vx; node.y += node.vy;
+                    if(node.x < 0 || node.x > cvs.width) node.vx *= -1;
+                    if(node.y < 0 || node.y > cvs.height) node.vy *= -1;
+                    
+                    ctx.fillStyle = '#00ff88'; ctx.beginPath(); ctx.arc(node.x, node.y, 2, 0, Math.PI*2); ctx.fill();
+                    
+                    nodes.forEach(other => {
+                        const dist = Math.hypot(node.x - other.x, node.y - other.y);
+                        if(dist < CONNECTION_DIST) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = `rgba(0, 255, 136, ${(1 - dist/CONNECTION_DIST) * 0.5})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.moveTo(node.x, node.y); ctx.lineTo(other.x, other.y); ctx.stroke();
+                        }
+                    });
+                });
+            }
+            draw();
+            window.stopPong = () => { active = false; };
+        })();
+    </script>
+    <script type="module" src="game.js"></script>
+</body>
+</html>
