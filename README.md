@@ -1,17 +1,26 @@
 # REFLECTIONS 👁️
 
-### [PLAY HERE](https://secrecthide.github.io/reflections-game/)
+[![PLAY NOW](https://img.shields.io/badge/PLAY-ENTER_THE_DARKNESS-red?style=for-the-badge)](https://secrecthide.github.io/reflections-game/)
+
+**Direct Link:** https://secrecthide.github.io/reflections-game/
+
 ---
 
-## ⚠️ IMPORTANT
-You **MUST ALLOW** camera access to play.
-If you don't, the game will freeze on the loading screen.
-*(Video is processed on your device. Nothing is sent to a server.)*
+### ⚠️ CRITICAL REQUIREMENT
+**You must allow Camera Access to play.**
+The game uses your webcam to track your fear responses.
+If you deny access, the game will not load.
 
-## 🕹️ Controls
-* **WASD** - Move
-* **Mouse** - Look
-* **E** - Interact
-* **F** - Flashlight
+*(Privacy Note: All video processing is done on your device. No data is sent to any server.)*
 
-Good luck.
+### 🎮 CONTROLS
+
+| Key | Action |
+| :--- | :--- |
+| **W, A, S, D** | Move |
+| **Mouse** | Look |
+| **E** | Interact / Pick Up |
+| **F** | Toggle Flashlight |
+
+---
+> *The darkness watches back.*
