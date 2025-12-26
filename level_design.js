@@ -1,126 +1,245 @@
-/* level_design.js - GEOMETRY FIX & UV MAPPING ENGINE */
+/* level_design.js - "SILENT HILL" AESTHETIC OVERHAUL */
 import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
 
-// --- TEXTURE ENGINE ---
-function createPsychWall() {
+// --- HORROR TEXTURE GENERATOR ---
+
+// Helper: Generates frantic scratch marks (The "Claw" effect)
+function drawScratches(ctx, width, height) {
+    ctx.strokeStyle = 'rgba(20, 0, 0, 0.3)'; // Dried blood color
+    ctx.lineWidth = 1;
+    
+    // Create 5-10 "clusters" of scratching
+    for(let c=0; c<8; c++) {
+        const cx = Math.random() * width;
+        const cy = Math.random() * height;
+        
+        // In each cluster, draw 10-20 manic lines
+        ctx.beginPath();
+        for(let i=0; i<15; i++) {
+            const ox = (Math.random() - 0.5) * 40;
+            const oy = (Math.random() - 0.5) * 40;
+            ctx.moveTo(cx + ox, cy + oy);
+            ctx.lineTo(cx + ox + (Math.random()-0.5)*20, cy + oy + 50); // Downward drag
+        }
+        ctx.stroke();
+    }
+}
+
+// Helper: Generates biological veins/roots
+function drawVeins(ctx, width, height) {
+    ctx.strokeStyle = 'rgba(30, 10, 10, 0.15)'; // Faint bruising
+    ctx.lineWidth = 2;
+    
+    for(let i=0; i<10; i++) {
+        let x = Math.random() * width;
+        let y = Math.random() * height;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        
+        // Random walker algorithm
+        for(let s=0; s<50; s++) {
+            x += (Math.random() - 0.5) * 20;
+            y += (Math.random() - 0.5) * 20;
+            ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+}
+
+// Helper: Rorschach Test (Symmetrical stains trigger face-recognition fear)
+function drawRorschach(ctx, width, height) {
+    const cx = width / 2;
+    const cy = height / 2;
+    
+    const size = 100 + Math.random() * 100;
+    const points = [];
+    
+    // Generate organic blob shape
+    for(let i=0; i<20; i++) {
+        points.push({
+            x: (Math.random() - 0.5) * size,
+            y: (Math.random() - 0.5) * size * 2
+        });
+    }
+    
+    ctx.fillStyle = 'rgba(10, 5, 0, 0.4)'; // Black rot
+    
+    // Draw Left
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    points.forEach(p => ctx.lineTo(cx + p.x, cy + p.y));
+    ctx.fill();
+    
+    // Draw Right (Mirror)
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    points.forEach(p => ctx.lineTo(cx - p.x, cy + p.y));
+    ctx.fill();
+}
+
+// 1. WALLS: "The Bruised Plaster"
+function createSilentHillWall() {
     const s = 512;
     const c = document.createElement('canvas'); c.width = s; c.height = s;
     const ctx = c.getContext('2d');
-    
-    // Base: Sickly Plaster
-    ctx.fillStyle = '#222'; ctx.fillRect(0,0,s,s);
-    
-    // Noise
+
+    // Base: Sickly Skin Tone (Pale Yellow/Grey)
+    ctx.fillStyle = '#b0a090'; 
+    ctx.fillRect(0, 0, s, s);
+
+    // Layer 1: Noise (Pores/Grit)
     const iData = ctx.getImageData(0,0,s,s);
     for(let i=0; i<iData.data.length; i+=4) {
-        const v = (Math.random()-0.5)*20;
-        iData.data[i]+=v; iData.data[i+1]+=v; iData.data[i+2]+=v;
+        const grain = (Math.random() - 0.5) * 40;
+        iData.data[i] -= grain;     // Subtract to make it look dirty
+        iData.data[i+1] -= grain;
+        iData.data[i+2] -= grain;
     }
-    ctx.putImageData(iData,0,0);
-    
-    // Mold/Rot
+    ctx.putImageData(iData, 0, 0);
+
+    // Layer 2: Bruising (Large soft purple/brown spots)
     ctx.globalCompositeOperation = 'multiply';
-    ctx.fillStyle = '#111';
-    for(let i=0; i<20; i++) {
-        ctx.beginPath(); ctx.arc(Math.random()*s, Math.random()*s, Math.random()*50, 0, Math.PI*2); ctx.fill();
+    for(let i=0; i<5; i++) {
+        const x = Math.random() * s;
+        const y = Math.random() * s;
+        const r = 50 + Math.random() * 100;
+        const grd = ctx.createRadialGradient(x, y, 0, x, y, r);
+        grd.addColorStop(0, 'rgba(60, 30, 30, 0.4)'); // Deep bruise
+        grd.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0,0,s,s);
     }
-    
-    // Water Trails
-    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 2;
-    for(let i=0; i<15; i++) {
-        const x = Math.random()*s;
-        ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,s); ctx.stroke();
-    }
-    
-    const t = new THREE.CanvasTexture(c);
-    t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.RepeatWrapping;
-    return t;
+
+    // Layer 3: Veins & Scratches
+    drawVeins(ctx, s, s);
+    drawScratches(ctx, s, s);
+
+    // Layer 4: The Waterline (Bottom is darker/wetter)
+    const waterGrd = ctx.createLinearGradient(0, 0, 0, s);
+    waterGrd.addColorStop(0, 'rgba(0,0,0,0)');
+    waterGrd.addColorStop(0.7, 'rgba(20,10,5,0.2)');
+    waterGrd.addColorStop(1, 'rgba(0,0,0,0.8)');
+    ctx.fillStyle = waterGrd;
+    ctx.fillRect(0,0,s,s);
+
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+    return tex;
 }
 
-function createTraumaFloor() {
+// 2. FLOOR: Industrial Grating over Void
+function createIndustrialFloor() {
     const s = 512;
     const c = document.createElement('canvas'); c.width = s; c.height = s;
     const ctx = c.getContext('2d');
-    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0,0,s,s);
-    
-    // Tiles
-    const ts = 64; 
-    ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
-    for(let y=0; y<s; y+=ts) {
-        for(let x=0; x<s; x+=ts) {
-            const v = 20 + Math.random()*10;
-            ctx.fillStyle = `rgb(${v},${v},${v})`;
-            ctx.fillRect(x,y,ts,ts);
-            ctx.strokeRect(x,y,ts,ts);
-        }
+
+    // Base: Dark Rusted Metal
+    ctx.fillStyle = '#1a1515'; ctx.fillRect(0,0,s,s);
+
+    // Grid Pattern (Rusty Metal Grate)
+    const step = 64;
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#3a2a2a'; // Rust color
+
+    for(let i=0; i<=s; i+=step) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, s); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(s, i); ctx.stroke();
     }
-    // Grime
-    ctx.fillStyle = 'rgba(20,10,0,0.3)';
-    ctx.beginPath(); ctx.arc(256,256,200,0,Math.PI*2); ctx.fill();
-    
-    const t = new THREE.CanvasTexture(c);
-    t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.RepeatWrapping;
-    return t;
+
+    // Blood Stains (Splotches on the grate)
+    ctx.fillStyle = 'rgba(50, 0, 0, 0.6)';
+    ctx.globalCompositeOperation = 'multiply';
+    drawRorschach(ctx, s, s); // Symmetrical stain on the floor
+
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+    return tex;
 }
 
-function createDoorTexture(type) {
+// 3. DOORS: The "Flesh" Metal
+function createNightmareDoor(type) {
     const c = document.createElement('canvas'); c.width = 256; c.height = 512;
     const ctx = c.getContext('2d');
-    ctx.fillStyle = '#2a2222'; ctx.fillRect(0,0,256,512);
-    ctx.lineWidth = 8; ctx.strokeStyle = '#000'; ctx.strokeRect(0,0,256,512);
-    
-    ctx.font = '30px Courier'; ctx.textAlign = 'center'; ctx.fillStyle = '#800';
-    if(type === 'face') {
-        ctx.fillText("OBSERVE", 128, 200);
-        ctx.strokeStyle = '#555'; ctx.lineWidth = 1;
-        for(let i=0; i<40; i++) {
-            ctx.beginPath(); ctx.moveTo(Math.random()*256, Math.random()*512); 
-            ctx.lineTo(Math.random()*256, Math.random()*512); ctx.stroke();
-        }
-    } else if (type === 'hand') {
-        ctx.fillText("RITUAL", 128, 200);
-        ctx.fillStyle = '#400'; ctx.beginPath(); ctx.arc(128,300,50,0,Math.PI*2); ctx.fill();
+
+    // Base: Rusted Iron
+    ctx.fillStyle = '#221111'; ctx.fillRect(0,0,256,512);
+
+    // Rust Texture
+    for(let i=0; i<100; i++) {
+        ctx.fillStyle = Math.random() > 0.5 ? '#3a1a1a' : '#1a0a0a';
+        ctx.fillRect(Math.random()*256, Math.random()*512, Math.random()*20, Math.random()*20);
     }
+
+    // The "Symbol"
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.font = 'bold 40px Courier New'; 
+    ctx.textAlign = 'center'; 
+    ctx.fillStyle = '#800'; // Blood red text
+    
+    // Distorted Text Effect
+    ctx.save();
+    ctx.translate(128, 150);
+    ctx.rotate((Math.random()-0.5)*0.2); // Tilted text
+    
+    if (type === 'face') {
+        ctx.fillText("DON'T", 0, 0);
+        ctx.fillText("LOOK", 0, 40);
+        // Scratching over the text
+        drawScratches(ctx, 200, 200);
+    } else if (type === 'hand') {
+        ctx.fillText("TOUCH", 0, 0);
+        // Bloody Handprint logic
+        ctx.fillStyle = 'rgba(100, 0, 0, 0.5)';
+        ctx.beginPath(); ctx.arc(0, 150, 60, 0, Math.PI*2); ctx.fill();
+        // Fingers
+        ctx.fillRect(-50, 80, 20, 80); ctx.fillRect(-20, 70, 20, 90); ctx.fillRect(10, 75, 20, 85);
+    }
+    ctx.restore();
+
     return new THREE.CanvasTexture(c);
 }
 
 // --- MATERIALS ---
 const textures = {
-    wall: createPsychWall(),
-    floor: createTraumaFloor(),
-    doorFace: createDoorTexture('face'),
-    doorHand: createDoorTexture('hand')
+    wall: createSilentHillWall(),
+    floor: createIndustrialFloor(),
+    doorFace: createNightmareDoor('face'),
+    doorHand: createNightmareDoor('hand')
 };
 
 const mats = {
-    concrete: new THREE.MeshStandardMaterial({ map: textures.wall, roughness: 0.9, color: 0x888888 }),
-    floor: new THREE.MeshStandardMaterial({ map: textures.floor, roughness: 0.6 }),
-    rust: new THREE.MeshStandardMaterial({ color: 0x443333, roughness: 0.8 }),
+    // Wall: High roughness (absorbs light), weird bump map
+    concrete: new THREE.MeshStandardMaterial({ 
+        map: textures.wall, 
+        roughness: 1.0, 
+        color: 0x888888 
+    }),
+    floor: new THREE.MeshStandardMaterial({ 
+        map: textures.floor, 
+        roughness: 0.5, 
+        metalness: 0.8 // Metal grate feeling
+    }),
+    rust: new THREE.MeshStandardMaterial({ color: 0x442222, roughness: 0.9 }), // Darker rust
     black: new THREE.MeshStandardMaterial({ color: 0x000000 }),
-    emissiveRed: new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x880000 }),
-    emissiveGreen: new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x008800 }),
-    emissiveBlue: new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x000088 })
+    emissiveRed: new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x660000 }), // Deep red light
+    emissiveGreen: new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x004400 }),
+    emissiveBlue: new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x000044 })
 };
 
-// --- GEOMETRY ENGINE (FIXED UVs) ---
+// --- GEOMETRY ENGINE (Preserving the Fixes) ---
 function fixUVs(geometry, w, h, d) {
     const pos = geometry.attributes.position;
     const norm = geometry.attributes.normal;
     const uv = geometry.attributes.uv;
-    const scale = 0.5;
+    const scale = 0.4; // Slightly tighter texture repeat for more detail
 
     for (let i = 0; i < pos.count; i++) {
         const x = pos.getX(i); const y = pos.getY(i); const z = pos.getZ(i);
-        const nx = Math.abs(norm.getX(i)); const ny = Math.abs(norm.getY(i)); const nz = Math.abs(norm.getZ(i));
-
-        // Automatic Planar Mapping based on Face Normal
-        if (nx > 0.5) { // Side Face (X-facing) -> Use Z/Y
-            uv.setXY(i, z * scale, y * scale);
-        } else if (ny > 0.5) { // Top/Bottom Face (Y-facing) -> Use X/Z
-            uv.setXY(i, x * scale, z * scale);
-        } else { // Front/Back Face (Z-facing) -> Use X/Y
-            uv.setXY(i, x * scale, y * scale);
-        }
+        const nx = Math.abs(norm.getX(i)); const ny = Math.abs(norm.getY(i));
+        
+        if (nx > 0.5) uv.setXY(i, z * scale, y * scale);
+        else if (ny > 0.5) uv.setXY(i, x * scale, z * scale);
+        else uv.setXY(i, x * scale, y * scale);
     }
     uv.needsUpdate = true;
 }
@@ -128,13 +247,13 @@ function fixUVs(geometry, w, h, d) {
 // --- LEVEL BUILDER ---
 export function initLevel(scene, walls, batteries, State, mirrorTexture) {
 
-    // Floor & Ceiling
+    // Floor (Grating)
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 600), mats.floor);
     floor.rotation.x = -Math.PI/2; floor.position.z = 200; 
-    // Manual repeat for large floor
-    floor.geometry.attributes.uv.array.forEach((v,i) => floor.geometry.attributes.uv.array[i] *= 20);
+    floor.geometry.attributes.uv.array.forEach((v,i) => floor.geometry.attributes.uv.array[i] *= 15);
     scene.add(floor);
 
+    // Ceiling (Oppressive Darkness)
     const ceil = new THREE.Mesh(new THREE.PlaneGeometry(100, 600), mats.concrete);
     ceil.rotation.x = Math.PI/2; ceil.position.set(0, 4.5, 200);
     scene.add(ceil);
@@ -150,45 +269,31 @@ export function initLevel(scene, walls, batteries, State, mirrorTexture) {
         return m;
     }
 
-    // ================= ACT I: CELLAR =================
-    // SEGMENTED WALLS (To prevent overlapping the Door Frame at Z=5)
-    // Segment 1: Start to Door
-    addWall(-5.5, 2.25, -2.5, 1, 4.5, 25); // Ends at Z=10 roughly? No, center -2.5, depth 25 -> -15 to +10.
-    // Wait, let's be precise. Door is at Z=5.
-    // Wall 1: -10 to 4. Center = -3. Depth = 14.
+    // ================= ACT I: THE CELLAR =================
+    // Broken into segments to allow door frame insertion
     addWall(-5.5, 2.25, -3, 1, 4.5, 14); 
     addWall(5.5, 2.25, -3, 1, 4.5, 14);
-
-    // Wall 2: 6 to 15. Center = 10.5. Depth = 9.
     addWall(-5.5, 2.25, 10.5, 1, 4.5, 9);
     addWall(5.5, 2.25, 10.5, 1, 4.5, 9);
-
-    // Back Wall
-    addWall(0, 2.25, -10, 12, 4.5, 1);
+    addWall(0, 2.25, -10, 12, 4.5, 1); // Back Wall
 
     // EMOTION DOOR FRAME (Z=5)
-    // Left Frame (Center -4. Right Edge -1.5)
     addWall(-4.0, 2.25, 5, 5, 4.5, 1); 
-    // Right Frame (Center 4. Left Edge 1.5)
     addWall(4.0, 2.25, 5, 5, 4.5, 1);
-    // Header (Center 0. Bottom > 3.8. Door top is 3.8)
-    // Y=4.2, Height=0.4. Bottom=4.0. Safe gap.
-    addWall(0, 4.2, 5, 3, 0.4, 1);
+    addWall(0, 4.2, 5, 3, 0.4, 1); // Header
 
     const emoDoor = new THREE.Mesh(new THREE.BoxGeometry(2.8, 3.8, 0.15), new THREE.MeshStandardMaterial({ map: textures.doorFace }));
     emoDoor.position.set(0, 1.9, 5); emoDoor.name = "emotion_door"; 
     scene.add(emoDoor); walls.push(emoDoor);
 
+    // Note 1
     const note1 = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.6), new THREE.MeshBasicMaterial({color:0xddddaa}));
     note1.position.set(1.6, 2.0, 4.9); note1.rotation.z = -0.1; note1.name = "emotion_note"; scene.add(note1);
 
-    // ================= ACT II: TUNNEL =================
-    // SEGMENTED WALLS (Door is at Z=40)
-    // Segment 1: Z 15 to 39. Center 27. Depth 24.
+    // ================= ACT II: RUST TUNNEL =================
+    // Walls switch to Rusty Metal here
     addWall(-4.5, 2.25, 27, 2, 4.5, 24, mats.rust);
     addWall(4.5, 2.25, 27, 2, 4.5, 24, mats.rust);
-
-    // Segment 2: Z 41 to 50. Center 45.5. Depth 9.
     addWall(-4.5, 2.25, 45.5, 2, 4.5, 9, mats.rust);
     addWall(4.5, 2.25, 45.5, 2, 4.5, 9, mats.rust);
 
@@ -206,9 +311,9 @@ export function initLevel(scene, walls, batteries, State, mirrorTexture) {
     }
 
     // HAND DOOR FRAME (Z=40)
-    addWall(-4.0, 2.25, 40, 5, 4.5, 1.2); // Thicker frame to hide seams
+    addWall(-4.0, 2.25, 40, 5, 4.5, 1.2); 
     addWall(4.0, 2.25, 40, 5, 4.5, 1.2);
-    addWall(0, 4.2, 40, 3, 0.4, 1.2); // Header
+    addWall(0, 4.2, 40, 3, 0.4, 1.2); 
 
     const handDoor = new THREE.Mesh(new THREE.BoxGeometry(2.8, 3.8, 0.15), new THREE.MeshStandardMaterial({ map: textures.doorHand }));
     handDoor.position.set(0, 1.9, 40); handDoor.name = "hand_door";
@@ -218,10 +323,12 @@ export function initLevel(scene, walls, batteries, State, mirrorTexture) {
     note2.position.set(2.5, 1.01, 38); note2.rotation.x = -Math.PI/2; note2.name = "hand_note"; scene.add(note2);
 
     // ================= ACT III: STATUE =================
+    // Back to Flesh Walls
     addWall(-6, 2.25, 70, 1, 4.5, 60);
     addWall(6, 2.25, 70, 1, 4.5, 60);
 
     const statue = new THREE.Group();
+    // Statue is now twisted and dark
     const sBody = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 1.7, 8), mats.rust);
     const sHead = new THREE.Mesh(new THREE.SphereGeometry(0.3), mats.rust); sHead.position.y = 1;
     const eyes = new THREE.Mesh(new THREE.SphereGeometry(0.05), mats.emissiveRed); 
@@ -241,7 +348,7 @@ export function initLevel(scene, walls, batteries, State, mirrorTexture) {
     // Align Puzzle
     addWall(-4.5, 2.25, 100, 4, 4.5, 1);
     addWall(4.5, 2.25, 100, 4, 4.5, 1);
-    addWall(0, 4.0, 100, 5, 1, 1); // This is a puzzle wall, distinct from doors
+    addWall(0, 4.0, 100, 5, 1, 1); 
 
     const alignP = new THREE.Mesh(new THREE.PlaneGeometry(4,4), new THREE.MeshStandardMaterial({map: textures.wall, transparent:true, opacity:0.9}));
     alignP.position.set(-4, 2, 110); alignP.rotation.y = Math.PI/2; alignP.name = "align_puzzle"; scene.add(alignP);
@@ -250,7 +357,7 @@ export function initLevel(scene, walls, batteries, State, mirrorTexture) {
 
     // Pit
     addWall(-6, 2.25, 135, 1, 4.5, 20); addWall(6, 2.25, 135, 1, 4.5, 20);
-    const bridge = new THREE.Mesh(new THREE.BoxGeometry(2, 0.1, 22), new THREE.MeshStandardMaterial({color:0x333333, transparent:true, opacity:0.6}));
+    const bridge = new THREE.Mesh(new THREE.BoxGeometry(2, 0.1, 22), new THREE.MeshStandardMaterial({color:0x222222, transparent:true, opacity:0.7}));
     bridge.position.set(0,0.1,135); scene.add(bridge);
 
     // ================= ACT V: FINAL =================
