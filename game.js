@@ -816,10 +816,31 @@ document.addEventListener('keydown', (e) => {
         }
     }
 });
-document.addEventListener('keyup', (e) => { 
-    if(e.code === 'KeyW') State.keys.w = false; if(e.code === 'KeyS') State.keys.s = false;
-    if(e.code === 'KeyA') State.keys.a = false; if(e.code === 'KeyD') State.keys.d = false;
-});
+// --- DEV TOOL: ULTRA BYPASS ---
+    // Press 'P' to teleport to the next level/zone instantly
+    if (e.code === 'KeyP') {
+        const z = camera.position.z;
+        let targetZ = 0;
+        let msg = "";
+
+        if (z < 10) { targetZ = 35; msg = "WARP >> INDUSTRIAL"; }
+        else if (z < 42) { targetZ = 60; msg = "WARP >> STATUE"; }
+        else if (z < 90) { targetZ = 105; msg = "WARP >> THE VOID"; }
+        else if (z < 160) { targetZ = 190; msg = "WARP >> HALLWAY"; }
+        else { targetZ = 242; msg = "WARP >> FINALE"; }
+
+        camera.position.set(0, 1.8, targetZ);
+        
+        // Reset state for safety
+        State.isFalling = false;
+        camera.rotation.set(0, 0, 0); 
+        scene.fog.color.setHex(0x020202);
+
+        const prompt = document.getElementById('interaction-prompt');
+        prompt.style.opacity = 1;
+        prompt.innerHTML = `<span style='color:#ff00ff; font-weight:bold; letter-spacing:2px;'>[ DEV: ${msg} ]</span>`;
+        setTimeout(() => prompt.style.opacity = 0, 1500);
+    }
 document.addEventListener('click', () => { if (State.gameActive) { controls.lock(); AudioSys.resume(); } });
 document.getElementById('btn-start').addEventListener('click', () => { 
     document.getElementById('start-screen').classList.remove('active'); 
