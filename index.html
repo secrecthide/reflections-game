@@ -6,11 +6,11 @@
     <link rel="stylesheet" href="style.css">
     
     <script>
-        window.onerror = function(msg, url, line, col, error) {
+        window.onerror = function(msg, url, line) {
             const box = document.getElementById('error-box');
             if(box) {
                 box.style.display = 'block';
-                box.innerHTML += `CRITICAL ERROR:<br>${msg}<br>Line: ${line}<br><br>`;
+                box.innerHTML += `CRITICAL ERROR:<br>${msg}<br>File: ${url.split('/').pop()}<br>Line: ${line}<br>----------------<br>`;
             }
         };
     </script>
@@ -22,9 +22,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 </head>
 <body>
-    <div id="error-box" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#200; color:#ff5555; z-index:99999; padding:20px; font-family:monospace; white-space:pre-wrap;">
-        SYSTEM FAILURE DETECTED.
-        ------------------------
+    <div id="error-box" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#400; color:#fff; z-index:99999; padding:20px; font-family:monospace; font-size:1.2rem; overflow:auto;">
+        SYSTEM FAILURE DETECTED.<br>
+        ------------------------<br>
     </div>
 
     <video id="webcamVideo" class="input_video" playsinline style="display:none;"></video>
@@ -32,61 +32,32 @@
 
     <div id="ui-layer">
         <div id="start-screen" class="screen active">
-            <div class="scanlines"></div>
-            
-            <div class="terminal-box">
-                <div class="terminal-header">
-                    <span class="blink">>></span> SYSTEM_BOOT_SEQUENCE // V.0.9
-                </div>
-
-                <h1 class="glitch" data-text="REFLECTIONS">REFLECTIONS</h1>
-                
+            <div class="consent-box" style="width: 550px;">
+                <h1>REFLECTIONS</h1>
                 <div id="loading-phase">
-                    <div class="canvas-wrapper">
-                        <canvas id="miniGameCanvas" width="500" height="150"></canvas>
-                        <div class="overlay-text">ESTABLISHING_NEURAL_LINK...</div>
-                    </div>
-                    
+                    <canvas id="miniGameCanvas" width="500" height="150"></canvas>
+                    <p style="font-size:0.8rem; color:#666; margin: 10px 0;">(Play Pong while AI modules download...)</p>
                     <div id="loading-container">
-                        <div class="loading-label">INSTALLING AI MODULES:</div>
                         <div id="progress-bar-bg"><div id="progress-bar-fill"></div></div>
-                        <div id="system-log">Initializing...</div>
+                        <div id="system-log">System Boot...</div>
                     </div>
                 </div>
-
                 <div id="calibration-phase" style="display:none;">
                     <div class="monitor-frame">
-                        <div class="hud-corner top-left"></div>
-                        <div class="hud-corner top-right"></div>
-                        <div class="hud-corner bottom-left"></div>
-                        <div class="hud-corner bottom-right"></div>
-                        <div class="rec-indicator">● REC</div>
-                        
+                        <p style="color:#00ff88; margin:0; padding:5px; background:#002200; font-size:0.8rem;">BIOMETRIC CALIBRATION MODE</p>
                         <canvas id="calibrationCanvas" width="480" height="360"></canvas>
                     </div>
-                    <p class="instruction-text">
-                        <span class="warn">⚠ SUBJECT REQUIRED</span><br>
-                        ENSURE LIGHTING IS SUFFICIENT.<br>
-                        SHOW <span class="highlight">HANDS</span> AND <span class="highlight">FACE</span> TO CALIBRATE.
-                    </p>
+                    <p style="color:#ccc; font-size:0.9rem; margin-top:10px;">Check lighting. Show HAND and FACE.</p>
                 </div>
-
-                <button id="btn-start" type="button" disabled autocomplete="off">
-                    <span class="btn-text">[ LOADING RESOURCES ]</span>
-                </button>
+                <button id="btn-start" disabled>INITIALIZING AI...</button>
             </div>
         </div>
 
         <div id="end-screen" class="screen">
-            <div class="terminal-box" style="width: 800px; max-height: 90vh; overflow-y: auto;">
-                <h1 style="color:#00ff88; font-size: 2rem;">SURVIVAL_REPORT_LOG</h1>
-                <p>SUBJECT STATUS: ESCAPED.</p>
-                <p>OBSERVATION RECORD:</p>
+            <div class="consent-box" style="width: 800px; max-height: 90vh; overflow-y: auto;">
+                <h1 style="color:#00ff88;">SURVIVAL REPORT</h1>
                 <div id="reaction-reel" style="display:flex; flex-wrap:wrap; gap:15px; justify-content:center; margin: 20px 0;"></div>
-                <div style="margin-top:20px; border-top:1px dashed #333; padding-top:20px;">
-                    <p style="font-size:0.8rem; color:#666;">* DATA PURGE IMMINENT ON SESSION CLOSE.</p>
-                    <button onclick="location.reload()" style="border-color:#fff; color:#fff;">REBOOT_SIMULATION</button>
-                </div>
+                <button onclick="location.reload()" style="border-color:#fff; color:#fff;">PLAY AGAIN</button>
             </div>
         </div>
 
@@ -94,64 +65,44 @@
             <div id="center-reticle"></div>
             <div id="interaction-prompt"></div>
             <div id="battery-container">
-                <div id="battery-icon">⚡</div>
+                <div id="battery-icon">🔋</div>
                 <div id="battery-bar-wrap"><div id="battery-fill"></div></div>
             </div>
-            <div id="camera-status">● LIVE</div>
+            <div id="camera-status">🔴 REC</div>
             <div id="ai-icons" style="position:absolute; bottom:20px; right:20px; display:none;">
                 <div id="hand-icon">✋</div>
-                <div id="face-icon">☺</div>
+                <div id="face-icon">😀</div>
             </div>
+            <button id="btn-panic">PANIC STOP</button>
         </div>
     </div>
 
     <script>
         (function() {
-            try {
-                const cvs = document.getElementById('miniGameCanvas');
-                const ctx = cvs.getContext('2d');
-                let active = true;
-                const nodes = [];
-                const NODE_COUNT = 40;
-                const CONNECTION_DIST = 80;
-
-                for(let i=0; i<NODE_COUNT; i++) {
-                    nodes.push({
-                        x: Math.random() * cvs.width, y: Math.random() * cvs.height,
-                        vx: (Math.random() - 0.5) * 0.8, vy: (Math.random() - 0.5) * 0.8
-                    });
-                }
-
-                function draw() {
-                    if(!active) return;
-                    requestAnimationFrame(draw);
-                    ctx.fillStyle = 'rgba(5, 16, 5, 0.2)'; ctx.fillRect(0, 0, cvs.width, cvs.height);
-                    ctx.strokeStyle = '#002211'; ctx.lineWidth = 1; ctx.beginPath();
-                    for(let x=0; x<cvs.width; x+=40) { ctx.moveTo(x,0); ctx.lineTo(x,cvs.height); } ctx.stroke();
-                    
-                    nodes.forEach(node => {
-                        node.x += node.vx; node.y += node.vy;
-                        if(node.x < 0 || node.x > cvs.width) node.vx *= -1;
-                        if(node.y < 0 || node.y > cvs.height) node.vy *= -1;
-                        
-                        ctx.fillStyle = '#00ff88'; ctx.beginPath(); ctx.arc(node.x, node.y, 2, 0, Math.PI*2); ctx.fill();
-                        
-                        nodes.forEach(other => {
-                            const dist = Math.hypot(node.x - other.x, node.y - other.y);
-                            if(dist < CONNECTION_DIST) {
-                                ctx.beginPath();
-                                ctx.strokeStyle = `rgba(0, 255, 136, ${(1 - dist/CONNECTION_DIST) * 0.5})`;
-                                ctx.lineWidth = 0.5;
-                                ctx.moveTo(node.x, node.y); ctx.lineTo(other.x, other.y); ctx.stroke();
-                            }
-                        });
-                    });
-                }
-                draw();
-                window.stopPong = () => { active = false; };
-            } catch(e) {
-                console.error("Visualizer Error:", e);
+            const cvs = document.getElementById('miniGameCanvas');
+            const ctx = cvs.getContext('2d');
+            let ball = { x: 250, y: 75, dx: 4, dy: 4, size: 6 };
+            let paddle = { x: 225, w: 60, h: 8 };
+            let active = true;
+            cvs.addEventListener('mousemove', (e) => {
+                const rect = cvs.getBoundingClientRect();
+                paddle.x = e.clientX - rect.left - paddle.w/2;
+            });
+            function gameLoop() {
+                if(!active) return;
+                requestAnimationFrame(gameLoop);
+                ctx.fillStyle = '#050505'; ctx.fillRect(0,0, cvs.width, cvs.height);
+                ctx.strokeStyle = '#222'; ctx.strokeRect(0,0, cvs.width, cvs.height);
+                ctx.fillStyle = '#00ff88'; ctx.fillRect(paddle.x, 140, paddle.w, paddle.h);
+                ball.x += ball.dx; ball.y += ball.dy;
+                if(ball.x < 0 || ball.x > cvs.width) ball.dx *= -1;
+                if(ball.y < 0) ball.dy *= -1;
+                if(ball.y > 135 && ball.x > paddle.x && ball.x < paddle.x + paddle.w) { ball.dy *= -1; ball.dx *= 1.05; ball.dy *= 1.05; }
+                if(ball.y > 160) ball = { x: 250, y: 75, dx: 4, dy: 4, size: 6 };
+                ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI*2); ctx.fill();
             }
+            gameLoop();
+            window.stopPong = () => { active = false; };
         })();
     </script>
     <script type="module" src="game.js"></script>
