@@ -783,6 +783,7 @@ document.addEventListener('mousemove', (e) => {
         Swing.y = Math.max(-150, Math.min(150, Swing.y));
     }
 });
+
 document.addEventListener('keydown', (e) => { 
     if(e.code === 'KeyW') State.keys.w = true; 
     if(e.code === 'KeyS') State.keys.s = true;
@@ -803,30 +804,16 @@ document.addEventListener('keydown', (e) => {
         prompt.innerHTML = "<span style='color:orange'>[ DEV TOOL: UNLOCKING... ]</span>";
         setTimeout(() => prompt.style.opacity = 0, 1000);
 
-        // 1. Force Open Emotion Door
         const emoDoor = scene.getObjectByName("emotion_door");
-        if (emoDoor && !State.puzzles.emotionDoor) {
-            openDoorSequence(emoDoor, "emotionDoor");
-        }
+        if (emoDoor && !State.puzzles.emotionDoor) openDoorSequence(emoDoor, "emotionDoor");
         
-        // 2. Force Open Foyer Door
         const foyerDoor = scene.getObjectByName("door_foyer");
-        if (foyerDoor) {
-            openDoorSequence(foyerDoor, "foyerDoor");
-        }
+        if (foyerDoor) openDoorSequence(foyerDoor, "foyerDoor");
     }
-});
 
-document.addEventListener('keyup', (e) => { 
-
-
-    if(e.code === 'KeyW') State.keys.w = false; if(e.code === 'KeyS') State.keys.s = false;
-
-
-    if(e.code === 'KeyA') State.keys.a = false; if(e.code === 'KeyD') State.keys.d = false;
-
-
-        if (e.code === 'KeyP') {
+    // --- DEV TOOL: ULTRA BYPASS ---
+    // Press 'P' to teleport to the next level/zone instantly
+    if (e.code === 'KeyP') {
         const z = camera.position.z;
         let targetZ = 0;
         let msg = "";
@@ -850,8 +837,13 @@ document.addEventListener('keyup', (e) => {
         setTimeout(() => prompt.style.opacity = 0, 1500);
     }
 });
-// --- DEV TOOL: ULTRA BYPASS ---
-    // Press 'P' to teleport to the next level/zone instantly
+
+document.addEventListener('keyup', (e) => { 
+    if(e.code === 'KeyW') State.keys.w = false; 
+    if(e.code === 'KeyS') State.keys.s = false;
+    if(e.code === 'KeyA') State.keys.a = false; 
+    if(e.code === 'KeyD') State.keys.d = false;
+});
 
 document.addEventListener('click', () => { if (State.gameActive) { controls.lock(); AudioSys.resume(); } });
 document.getElementById('btn-start').addEventListener('click', () => { 
