@@ -816,9 +816,17 @@ document.addEventListener('keydown', (e) => {
         }
     }
 });
-// --- DEV TOOL: ULTRA BYPASS ---
-    // Press 'P' to teleport to the next level/zone instantly
-    if (e.code === 'KeyP') {
+
+document.addEventListener('keyup', (e) => { 
+
+
+    if(e.code === 'KeyW') State.keys.w = false; if(e.code === 'KeyS') State.keys.s = false;
+
+
+    if(e.code === 'KeyA') State.keys.a = false; if(e.code === 'KeyD') State.keys.d = false;
+
+
+        if (e.code === 'KeyP') {
         const z = camera.position.z;
         let targetZ = 0;
         let msg = "";
@@ -841,6 +849,10 @@ document.addEventListener('keydown', (e) => {
         prompt.innerHTML = `<span style='color:#ff00ff; font-weight:bold; letter-spacing:2px;'>[ DEV: ${msg} ]</span>`;
         setTimeout(() => prompt.style.opacity = 0, 1500);
     }
+});
+// --- DEV TOOL: ULTRA BYPASS ---
+    // Press 'P' to teleport to the next level/zone instantly
+
 document.addEventListener('click', () => { if (State.gameActive) { controls.lock(); AudioSys.resume(); } });
 document.getElementById('btn-start').addEventListener('click', () => { 
     document.getElementById('start-screen').classList.remove('active'); 
